@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html ng-app="zumaAuditor">
+<head>
+    <title>Zuma Auditor</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-route.min.js"></script>
+    <script src="app.js"></script>
+    <script src="controllers.js"></script>
+    <script src="services.js"></script>
+    <script src="directives.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header ng-include="'templates/header.html'"></header>
+        <main ng-view></main>
+        <footer ng-include="'templates/footer.html'"></footer>
+    </div>
+</body>
+</html>

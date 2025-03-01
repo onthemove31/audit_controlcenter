@@ -1,0 +1,126 @@
+<div class="audit-container">
+    <!-- User info section -->
+    <div class="user-info" ng-if="currentUser">
+        <p>Welcome, {{currentUser.username}}</p>
+        <button ng-click="logout()">Logout</button>
+    </div>
+
+
+    <div class="audit-header">
+        <div class="stats-bar">
+            <div class="progress-info">
+                <span>Completed: {{completedCount}}</span>
+                <span>Pending: {{pendingCount}}</span>
+                <span>Total: {{totalRecords}}</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar">
+                    <div ng-style="{'width': completionPercentage + '%'}"
+                         class="progress-fill">
+                        {{completionPercentage}}%
+                    </div>
+                </div>
+            </div>
+            <span class="time-remaining">Time Remaining: {{timeRemaining}}</span>
+        </div>
+        <div class="pagination">
+            <button ng-click="previousPage()" ng-disabled="currentPage === 1">← Previous</button>
+            <span>Page {{currentPage}} of {{totalPages}}</span>
+            <button ng-click="nextPage()" ng-disabled="currentPage === totalPages">Next →</button>
+        </div>
+    </div>
+
+    <!-- Loading message -->
+    <div class="loading-message" ng-if="!currentRecords.length">
+        <p>Loading records...</p>
+    </div>
+
+    <!-- Error message -->
+    <div class="error-message" ng-if="error">
+        {{error}}
+    </div>
+
+    <div class="records-table-container">
+        <table class="records-table">
+            <thead>
+                <tr>
+                    <th>Website</th>
+                    <th>Brand</th>
+                    <th>Brand Match</th>
+                    <th>DTC Status</th>
+                    <th>Risk Status</th>
+                    <th>Redirects</th>
+                    <th>Redirect URL</th>
+                    <th>Risk Reason</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="record in currentRecords" 
+                    ng-class="{'saved': record.saveStatus === 'Saved successfully'}">
+                    <td class="website-cell" title="{{record.website_name}}">
+                        {{record.website_name}}
+                    </td>
+                    <td>{{record.brand_name}}</td>
+                    <td>
+                        <select ng-model="record.brand_matches_website" 
+                                ng-change="autoSave(record)">
+                            <option value="">Select...</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select ng-model="record.dtc_status" 
+                                ng-change="autoSave(record)">
+                            <option value="">Select...</option>
+                            <option value="DTC">DTC</option>
+                            <option value="Not DTC">Not DTC</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select ng-model="record.risk_status" 
+                                ng-change="updateRiskReason(record)">
+                            <option value="">Select...</option>
+                            <option value="Risky">Risky</option>
+                            <option value="Not Risky">Not Risky</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select ng-model="record.redirects" 
+                                ng-change="autoSave(record)">
+                            <option value="">Select...</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </td>
+                    <td>
+                        <textarea ng-model="record.redirected_url"
+                                ng-change="autoSave(record)"
+                                placeholder="Enter redirect URL..."
+                                rows="2"></textarea>
+                    </td>
+                    <td>
+                        <textarea ng-if="record.risk_status === 'Risky'"
+                                ng-model="record.risk_reason"
+                                ng-change="autoSave(record)"
+                                placeholder="Enter risk reason..."
+                                rows="2"></textarea>
+                    </td>
+                    <td class="status-cell">
+                        <span class="save-status" ng-if="record.saveStatus"></span>
+                            {{record.saveStatus}}
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination-controls">
+        <button ng-click="previousPage()" 
+                ng-disabled="currentPage === 1">← Previous</button>
+        <button ng-click="nextPage()" 
+                ng-disabled="currentPage === totalPages">Next →</button>
+    </div>
+</div>

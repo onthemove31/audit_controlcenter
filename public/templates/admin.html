@@ -1,0 +1,205 @@
+<div class="admin-container">
+    <div class="admin-header">
+        <h2>Admin Dashboard</h2>
+        <div class="stats-summary">
+            <div class="stat-box">
+                <span>Total Records: {{totalRecords}}</span>
+            </div>
+            <div class="stat-box">
+                <span>Audited: {{auditedCount}}</span>
+            </div>
+            <div class="stat-box">
+                <span>Active Auditors: {{activeAuditors}}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-sections">
+        <!-- User Management Section -->
+        <section class="admin-section">
+            <h3>User Management</h3>
+            <div class="user-controls">
+                <input type="text" ng-model="newUser.username" placeholder="Username">
+                <button ng-click="addUser()">Add User</button>
+            </div>
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="user in users">
+                        <td>{{user.username}}</td>
+                        <td>{{user.role}}</td>
+                        <td>
+                            <button ng-click="removeUser(user.id)">Remove</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Data Management Section -->
+        <section class="admin-section">
+            <h3>Data Management</h3>
+            <div class="upload-section">
+                <label for="csvFileInput" class="file-label">Choose CSV File</label>
+                <input type="file" 
+                       id="csvFileInput"
+                       file-model="csvFile" 
+                       accept=".csv"
+                       style="display: none;">
+                <button class="upload-btn" 
+                        ng-click="uploadCSV()" 
+                        ng-disabled="!csvFile || uploadProgress.inProgress">
+                    {{csvFile ? 'Upload ' + csvFile.name : 'Choose File'}}
+                </button>
+                
+                <div class="progress-container" ng-if="uploadProgress.inProgress">
+                    <div class="progress-bar">
+                        <div ng-style="{'width': uploadProgress.percent + '%'}"></div>
+                    </div>
+                    <div class="progress-text">
+                        {{uploadProgress.message}}
+                        ({{uploadProgress.percent}}%)
+                    </div>
+                </div>
+
+                <div class="upload-status" ng-if="uploadStatus && !uploadProgress.inProgress">
+                    {{uploadStatus}}
+                </div>
+            </div>
+            <div class="export-section">
+                <h4>Export Data</h4>
+                <div class="filter-controls">
+                    <select ng-model="exportFilter.auditor">
+                        <option value="">All Auditors</option>
+                        <option ng-repeat="user in users" value="{{user.username}}">
+                            {{user.username}}
+                        </option>
+                    </select>
+                    <input type="date" ng-model="exportFilter.dateFrom">
+                    <input type="date" ng-model="exportFilter.dateTo">
+                    <button ng-click="exportData()">Export</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Allocation Section -->
+        <section class="admin-section">
+            <h3>Work Allocation</h3>
+            <div class="allocation-controls">
+                <button ng-click="randomlyAssignWork()" 
+                        ng-disabled="allocation.inProgress || !allocation.unallocatedCount">
+                    Random Allocation 
+                    <span ng-if="allocation.unallocatedCount">({{allocation.unallocatedCount}} records)</span>
+                </button>
+                <button ng-click="reAuditSelection()" 
+                        ng-disabled="allocation.inProgress">
+                    Select for Re-Audit
+                </button>
+            </div>
+            
+            <div class="progress-container" ng-if="allocation.inProgress">
+                <div class="progress-bar">
+                    <div ng-style="{'width': allocation.progress + '%'}"></div>
+                </div>
+                <div class="progress-text">
+                    {{allocation.message}}
+                    <span ng-if="allocation.progress">({{allocation.progress}}%)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Allocation Progress Section -->
+        <section class="admin-section">
+            <h3>Record Allocation Status</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" ng-style="{'width': allocationProgress.percent + '%'}">
+                    {{allocationProgress.percent}}%
+                </div>
+            </div>
+            
+            <table class="allocation-stats">
+                <thead>
+                    <tr>
+                        <th>Auditor</th>
+                        <th>Total Allocated</th>
+                        <th>Pending</th>
+                        <th>Completed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="stat in auditorStats">
+                        <td>{{stat.username}}</td>
+                        <td>{{stat.allocated}}</td>
+                        <td>{{stat.pending}}</td>
+                        <td>{{stat.completed}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Update the Allocation Stats section -->
+        <section class="admin-section allocation-stats-section">
+            <h3>Auditor Statistics</h3>
+            <div class="table-responsive">
+                <table class="allocation-stats">
+                    <thead>
+                        <tr>
+                            <th>Auditor</th>
+                            <th>Total Allocated</th>
+                            <th>Pending Audits</th>
+                            <th>Completed</th>
+                            <th>Completion Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="stat in auditorStats track by stat.username">
+                            <td>{{stat.username}}</td>
+                            <td>{{stat.allocated || 0}}</td>
+                            <td>{{stat.pending || 0}}</td>
+                            <td>{{stat.completed || 0}}</td>
+                            <td>{{stat.allocated > 0 ? ((stat.completed / stat.allocated) * 100).toFixed(1) : '0.0'}}%</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td><strong>Total</strong></td>
+                            <td><strong>{{getTotalAllocated()}}</strong></td>
+                            <td><strong>{{getTotalPending()}}</strong></td>
+                            <td><strong>{{getTotalCompleted()}}</strong></td>
+                            <td><strong>{{getOverallCompletionRate()}}%</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <!-- Analytics Section -->
+        <section class="admin-section">
+            <h3>Analytics</h3>
+            <div class="analytics-dashboard">
+                <div class="metric-box">
+                    <h4>Audit Progress</h4>
+                    <div class="progress-bar">
+                        <div ng-style="{'width': progressPercentage + '%'}"></div>
+                    </div>
+                </div>
+                <div class="metric-box">
+                    <h4>Accuracy Metrics</h4>
+                    <p>Precision: {{metrics.precision}}%</p>
+                    <p>Recall: {{metrics.recall}}%</p>
+                </div>
+                <div class="metric-box">
+                    <h4>Productivity</h4>
+                    <p>Avg. Time per Audit: {{metrics.avgTime}}</p>
+                    <p>Daily Throughput: {{metrics.throughput}}</p>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
