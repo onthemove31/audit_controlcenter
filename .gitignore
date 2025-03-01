@@ -50,3 +50,5 @@ debug/
 .debug
 
 test_audit.csv
+missing_data.csv
+uploads/
