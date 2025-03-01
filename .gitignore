@@ -48,3 +48,5 @@ coverage/
 # Debug files
 debug/
 .debug
+
+test_audit.csv
