@@ -1,17 +1,22 @@
 <div class="login-container">
     <div class="login-box">
         <h2>Login to Zuma Auditor</h2>
-        <form ng-submit="login()">
-            <div class="form-group">
+        <form ng-submit="login()" class="mt-4">
+            <div class="form-group mb-3">
                 <input type="text" 
+                       class="form-control" 
                        ng-model="username" 
-                       placeholder="Username" 
+                       placeholder="Enter username"
                        required>
             </div>
-            <div class="error-message" ng-if="error">
+            <div class="alert alert-danger" ng-if="error" role="alert">
                 {{error}}
             </div>
-            <button type="submit">Login</button>
+            <button type="submit" 
+                    class="btn btn-primary w-100"
+                    ng-disabled="!username">
+                Login
+            </button>
         </form>
     </div>
 </div>

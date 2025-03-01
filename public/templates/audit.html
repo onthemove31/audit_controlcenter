@@ -1,4 +1,4 @@
-<div class="audit-container">
+<div class="audit-container p-3">
     <!-- User info section -->
     <div class="user-info" ng-if="currentUser">
         <p>Welcome, {{currentUser.username}}</p>
@@ -6,53 +6,42 @@
     </div>
 
 
-    <div class="audit-header">
-        <div class="stats-bar">
-            <div class="progress-info">
-                <span>Completed: {{completedCount}}</span>
-                <span>Pending: {{pendingCount}}</span>
-                <span>Total: {{totalRecords}}</span>
-            </div>
-            <div class="progress-bar-container">
-                <div class="progress-bar">
-                    <div ng-style="{'width': completionPercentage + '%'}"
-                         class="progress-fill">
-                        {{completionPercentage}}%
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="stats-bar">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="progress-info">
+                        <span class="badge bg-success me-2">Completed: {{completedCount}}</span>
+                        <span class="badge bg-warning me-2">Pending: {{pendingCount}}</span>
+                        <span class="badge bg-info">Total: {{totalRecords}}</span>
                     </div>
+                    <span class="text-muted">Time Remaining: {{timeRemaining}}</span>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar" 
+                         role="progressbar"
+                         ng-style="{'width': completionPercentage + '%'}"
+                         aria-valuenow="{{completionPercentage}}"
+                         aria-valuemin="0"
+                         aria-valuemax="100">{{completionPercentage}}%</div>
                 </div>
             </div>
-            <span class="time-remaining">Time Remaining: {{timeRemaining}}</span>
-        </div>
-        <div class="pagination">
-            <button ng-click="previousPage()" ng-disabled="currentPage === 1">← Previous</button>
-            <span>Page {{currentPage}} of {{totalPages}}</span>
-            <button ng-click="nextPage()" ng-disabled="currentPage === totalPages">Next →</button>
         </div>
     </div>
 
-    <!-- Loading message -->
-    <div class="loading-message" ng-if="!currentRecords.length">
-        <p>Loading records...</p>
-    </div>
-
-    <!-- Error message -->
-    <div class="error-message" ng-if="error">
-        {{error}}
-    </div>
-
-    <div class="records-table-container">
-        <table class="records-table">
-            <thead>
+    <div class="table-wrapper">
+        <table class="table table-bordered table-hover records-table">
+            <thead class="table-light">
                 <tr>
-                    <th>Website</th>
-                    <th>Brand</th>
-                    <th>Brand Match</th>
-                    <th>DTC Status</th>
-                    <th>Risk Status</th>
-                    <th>Redirects</th>
-                    <th>Redirect URL</th>
-                    <th>Risk Reason</th>
-                    <th>Status</th>
+                    <th class="col-website">Website</th>
+                    <th class="col-brand">Brand</th>
+                    <th class="col-match">Brand Match</th>
+                    <th class="col-dtc">DTC Status</th>
+                    <th class="col-risk">Risk Status</th>
+                    <th class="col-redirects">Redirects</th>
+                    <th class="col-url">Redirect URL</th>
+                    <th class="col-reason">Risk Reason</th>
+                    <th class="col-status">Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -117,10 +106,17 @@
         </table>
     </div>
 
-    <div class="pagination-controls">
-        <button ng-click="previousPage()" 
-                ng-disabled="currentPage === 1">← Previous</button>
-        <button ng-click="nextPage()" 
-                ng-disabled="currentPage === totalPages">Next →</button>
-    </div>
+    <nav aria-label="Page navigation" class="mt-3">
+        <ul class="pagination justify-content-center">
+            <li class="page-item" ng-class="{disabled: currentPage === 1}">
+                <button class="page-link" ng-click="previousPage()">← Previous</button>
+            </li>
+            <li class="page-item disabled">
+                <span class="page-link">Page {{currentPage}} of {{totalPages}}</span>
+            </li>
+            <li class="page-item" ng-class="{disabled: currentPage === totalPages}">
+                <button class="page-link" ng-click="nextPage()">Next →</button>
+            </li>
+        </ul>
+    </nav>
 </div>

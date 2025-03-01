@@ -28,62 +28,57 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+// Middleware setup - place these before any routes
 app.use(cors());
-app.use(express.json());  // This needs to be before routes
-app.use(express.urlencoded({ extended: true }));  // Add this line
-app.use(express.static('public'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Database initialization
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY,
-        username TEXT UNIQUE,
-        role TEXT
-    )`);
+// API Routes - must be defined BEFORE the static and catch-all routes
+const apiRoutes = require('./routes/api');
+app.use('/api', apiRoutes);
 
-    db.run(`CREATE TABLE IF NOT EXISTS audit_records (
-        id INTEGER PRIMARY KEY,
-        website_name TEXT,
-        brand_name TEXT,
-        sm_classification TEXT,
-        brand_matches_website TEXT,
-        dtc_status TEXT,
-        risk_status TEXT,
-        risk_reason TEXT,
-        redirects TEXT,
-        redirected_url TEXT,
-        auditor TEXT,
-        audit_date TEXT,
-        model_suggestion TEXT,
-        reaudit INTEGER DEFAULT 0,
-        assigned_date TEXT
-    )`);
+// Static file serving comes after API routes
+app.use(express.static(path.join(__dirname, 'public')));
 
-    db.run(`CREATE TABLE IF NOT EXISTS audit_logs (
-        id INTEGER PRIMARY KEY,
-        record_id INTEGER,
-        auditor TEXT,
-        action TEXT,
-        timestamp TEXT,
-        changes TEXT
-    )`);
+// Create required directories if they don't exist
+const dirs = ['uploads', 'logs'];
+dirs.forEach(dir => {
+    const dirPath = path.join(__dirname, dir);
+    if (!fs.existsSync(dirPath)){
+        fs.mkdirSync(dirPath, { recursive: true });
+    }
 });
 
-// User routes
-app.post('/api/users/login', (req, res) => {
-    const { username } = req.body;
-    db.get('SELECT id, username, role FROM users WHERE username = ?', 
-        [username], 
-        (err, row) => {
-            if (err) {
-                res.status(500).json({ error: err.message });
-            } else if (!row) {
-                res.status(404).json({ error: 'User not found' });
-            } else {
-                res.json(row);
-            }
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Server error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+});
+
+// Catch-all route must be last
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Move ALL API routes before the static and catch-all routes
+app.get('/api/admin/users', (req, res) => {
+    console.log('Fetching all users');
+    db.all(`
+        SELECT 
+            id,
+            username,
+            role
+        FROM users 
+        ORDER BY username
+    `, [], (err, rows) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: err.message });
         }
-    );
+        console.log('Users found:', rows);
+        // Ensure we're sending an array
+        res.json(rows || []);
+    });
 });
 
 // Add this route handler before other routes
@@ -624,12 +619,28 @@ cron.schedule('0 0 * * *', () => {
 
 // User management routes
 app.get('/api/admin/users', (req, res) => {
-    db.all('SELECT * FROM users', [], (err, rows) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json(rows);
-    });
+    console.log('Fetching all users');
+    try {
+        db.all(`
+            SELECT 
+                id,
+                username,
+                role,
+                (SELECT COUNT(*) FROM audit_records WHERE auditor = users.username) as record_count
+            FROM users
+            ORDER BY username
+        `, [], (err, rows) => {
+            if (err) {
+                console.error('Error fetching users:', err);
+                return res.status(500).json({ error: err.message });
+            }
+            console.log('Users fetched:', rows);
+            res.json(Array.isArray(rows) ? rows : []); // Ensure we always return an array
+        });
+    } catch (err) {
+        console.error('Unexpected error in /api/admin/users:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 app.delete('/api/admin/users/:id', (req, res) => {
@@ -682,6 +693,59 @@ app.get('/api/admin/auditor-stats', (req, res) => {
         console.log('Auditor stats results:', rows); // Debug log
         res.json(rows);
     });
+});
+
+// Database initialization
+db.serialize(() => {
+    db.run(`CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY,
+        username TEXT UNIQUE,
+        role TEXT
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS audit_records (
+        id INTEGER PRIMARY KEY,
+        website_name TEXT,
+        brand_name TEXT,
+        sm_classification TEXT,
+        brand_matches_website TEXT,
+        dtc_status TEXT,
+        risk_status TEXT,
+        risk_reason TEXT,
+        redirects TEXT,
+        redirected_url TEXT,
+        auditor TEXT,
+        audit_date TEXT,
+        model_suggestion TEXT,
+        reaudit INTEGER DEFAULT 0,
+        assigned_date TEXT
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS audit_logs (
+        id INTEGER PRIMARY KEY,
+        record_id INTEGER,
+        auditor TEXT,
+        action TEXT,
+        timestamp TEXT,
+        changes TEXT
+    )`);
+});
+
+// User routes
+app.post('/api/users/login', (req, res) => {
+    const { username } = req.body;
+    db.get('SELECT id, username, role FROM users WHERE username = ?', 
+        [username], 
+        (err, row) => {
+            if (err) {
+                res.status(500).json({ error: err.message });
+            } else if (!row) {
+                res.status(404).json({ error: 'User not found' });
+            } else {
+                res.json(row);
+            }
+        }
+    );
 });
 
 const PORT = process.env.PORT || 3000;
