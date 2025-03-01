@@ -1,8 +1,13 @@
 <div class="audit-container p-3">
     <!-- User info section -->
     <div class="user-info" ng-if="currentUser">
-        <p>Welcome, {{currentUser.username}}</p>
-        <button ng-click="logout()">Logout</button>
+        <div class="d-flex justify-content-between align-items-center">
+            <p class="mb-0">Welcome, {{currentUser.username}}</p>
+            <div class="d-flex align-items-center">
+                <span class="me-3 text-muted">Page {{currentPage}} of {{totalPages}}</span>
+                <button class="btn btn-outline-secondary" ng-click="logout()">Logout</button>
+            </div>
+        </div>
     </div>
 
 
@@ -15,7 +20,12 @@
                         <span class="badge bg-warning me-2">Pending: {{pendingCount}}</span>
                         <span class="badge bg-info">Total: {{totalRecords}}</span>
                     </div>
-                    <span class="text-muted">Time Remaining: {{timeRemaining}}</span>
+                    <div class="text-end">
+                        <span class="text-muted me-3">Session Time: {{elapsedTime}}</span>
+                        <span ng-class="{'text-danger': stats.isPastDeadline, 'text-warning': stats.remainingDays < 7}">
+                            Time to Deadline: {{stats.timeRemaining}}
+                        </span>
+                    </div>
                 </div>
                 <div class="progress">
                     <div class="progress-bar" 
@@ -25,6 +35,23 @@
                          aria-valuemin="0"
                          aria-valuemax="100">{{completionPercentage}}%</div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-bar">
+        <div class="row">
+            <div class="col-md-3">
+                <strong>Total:</strong> {{stats.total || 0}}
+            </div>
+            <div class="col-md-3">
+                <strong>Completed:</strong> {{stats.completed || 0}}
+            </div>
+            <div class="col-md-3">
+                <strong>Pending:</strong> {{stats.pending || 0}}
+            </div>
+            <div class="col-md-3">
+                <strong>Est. Time Remaining:</strong> {{stats.estimatedDaysRemaining || 0}} days
             </div>
         </div>
     </div>
@@ -53,7 +80,8 @@
                     <td>{{record.brand_name}}</td>
                     <td>
                         <select ng-model="record.brand_matches_website" 
-                                ng-change="autoSave(record)">
+                                ng-change="autoSave(record)"
+                                class="form-select">
                             <option value="">Select...</option>
                             <option value="Yes">Yes</option>
                             <option value="No">No</option>
@@ -61,7 +89,8 @@
                     </td>
                     <td>
                         <select ng-model="record.dtc_status" 
-                                ng-change="autoSave(record)">
+                                ng-change="autoSave(record)"
+                                class="form-select">
                             <option value="">Select...</option>
                             <option value="DTC">DTC</option>
                             <option value="Not DTC">Not DTC</option>
@@ -69,7 +98,8 @@
                     </td>
                     <td>
                         <select ng-model="record.risk_status" 
-                                ng-change="updateRiskReason(record)">
+                                ng-change="updateRiskReason(record)"
+                                class="form-select">
                             <option value="">Select...</option>
                             <option value="Risky">Risky</option>
                             <option value="Not Risky">Not Risky</option>
@@ -97,26 +127,61 @@
                                 rows="2"></textarea>
                     </td>
                     <td class="status-cell">
-                        <span class="save-status" ng-if="record.saveStatus"></span>
-                            {{record.saveStatus}}
-                        </span>
+                        <small ng-if="saveStatus[record.id]" 
+                               ng-class="{
+                                   'text-success': saveStatus[record.id].saved,
+                                   'text-warning': saveStatus[record.id].saving,
+                                   'text-danger': saveStatus[record.id].error
+                               }">
+                            {{getSaveStatus(record.id)}}
+                        </small>
                     </td>
                 </tr>
             </tbody>
         </table>
     </div>
 
-    <nav aria-label="Page navigation" class="mt-3">
+    <!-- Pagination -->
+    <nav aria-label="Page navigation" class="mt-3" ng-if="totalPages > 1">
         <ul class="pagination justify-content-center">
             <li class="page-item" ng-class="{disabled: currentPage === 1}">
-                <button class="page-link" ng-click="previousPage()">← Previous</button>
+                <a class="page-link" href ng-click="$event.preventDefault(); previousPage()">Previous</a>
             </li>
-            <li class="page-item disabled">
-                <span class="page-link">Page {{currentPage}} of {{totalPages}}</span>
+            
+            <!-- First page -->
+            <li class="page-item" ng-class="{active: currentPage === 1}">
+                <a class="page-link" href ng-click="$event.preventDefault(); goToPage(1)">1</a>
             </li>
+
+            <!-- Left ellipsis -->
+            <li class="page-item disabled" ng-if="currentPage > 3">
+                <span class="page-link">...</span>
+            </li>
+
+            <!-- Page numbers -->
+            <li class="page-item" 
+                ng-repeat="page in pageRange()"
+                ng-if="page !== 1 && page !== totalPages"
+                ng-class="{active: currentPage === page}">
+                <a class="page-link" href ng-click="$event.preventDefault(); goToPage(page)">{{page}}</a>
+            </li>
+
+            <!-- Right ellipsis -->
+            <li class="page-item disabled" ng-if="currentPage < totalPages - 2">
+                <span class="page-link">...</span>
+            </li>
+
+            <!-- Last page -->
+            <li class="page-item" ng-if="totalPages > 1" ng-class="{active: currentPage === totalPages}">
+                <a class="page-link" href ng-click="$event.preventDefault(); goToPage(totalPages)">{{totalPages}}</a>
+            </li>
+            
             <li class="page-item" ng-class="{disabled: currentPage === totalPages}">
-                <button class="page-link" ng-click="nextPage()">Next →</button>
+                <a class="page-link" href ng-click="$event.preventDefault(); nextPage()">Next</a>
             </li>
         </ul>
+        <div class="text-center mt-2">
+            <small class="text-muted">Page {{currentPage}} of {{totalPages}}</small>
+        </div>
     </nav>
 </div>

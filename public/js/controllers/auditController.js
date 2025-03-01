@@ -1,6 +1,6 @@
 angular.module('auditApp')
-    .controller('AuditController', ['$scope', '$http', '$location', 'AuthService', 
-        function($scope, $http, $location, AuthService) {
+    .controller('AuditController', ['$scope', '$http', '$location', 'AuthService', '$timeout',
+        function($scope, $http, $location, AuthService, $timeout) {
             $scope.currentUser = AuthService.getCurrentUser();
             
             if (!$scope.currentUser) {
@@ -12,6 +12,7 @@ angular.module('auditApp')
             $scope.currentPage = 1;
             $scope.totalPages = 1;
             $scope.currentRecords = [];
+            $scope.itemsPerPage = 10;
 
             // Add logout function
             $scope.logout = function() {
@@ -21,23 +22,218 @@ angular.module('auditApp')
 
             // Load records for current user
             function loadRecords(page) {
-                $http.get('/api/records', {
+                $http.get('/api/audit', {  // Changed from '/api/records' to '/api/audit'
                     params: {
                         auditor: $scope.currentUser.username,
-                        page: page
+                        page: page,
+                        limit: $scope.itemsPerPage
                     }
                 })
                 .then(function(response) {
-                    $scope.currentRecords = response.data;
+                    console.log('Records loaded:', response.data); // Add debug log
+                    $scope.currentRecords = response.data.records;
+                    $scope.totalPages = response.data.totalPages;
+                    $scope.currentPage = response.data.currentPage;
+                    $scope.totalRecords = response.data.total;
                 })
                 .catch(function(error) {
                     console.error('Error loading records:', error);
+                    $scope.currentRecords = [];
                 });
             }
 
             // Initialize data
             loadRecords($scope.currentPage);
             
+            // Add save status tracking
+            $scope.saveStatus = {};
+
+            $scope.saveRecord = function(record) {
+                if (!record || !record.id) return;
+                
+                $scope.saveStatus[record.id] = {
+                    saving: true,
+                    saved: false,
+                    error: null
+                };
+
+                $http.post('/api/records/save', record)
+                    .then(response => {
+                        $scope.saveStatus[record.id] = {
+                            saving: false,
+                            saved: true,
+                            savedAt: response.data.savedAt,
+                            error: null
+                        };
+                        loadStats(); // Refresh stats after save
+                    })
+                    .catch(error => {
+                        console.error('Save error:', error);
+                        $scope.saveStatus[record.id] = {
+                            saving: false,
+                            saved: false,
+                            error: error.data?.error || 'Failed to save'
+                        };
+                    });
+            };
+
+            // Add auto-save functionality
+            $scope.autoSave = function(record) {
+                if (!record) return;
+                
+                // Update save status
+                $scope.saveStatus[record.id] = {
+                    saving: true,
+                    saved: false,
+                    error: null
+                };
+
+                record.auditor = $scope.currentUser.username;
+                
+                $http.post('/api/audit/save', record)  // Changed from '/api/records/save' to '/api/audit/save'
+                    .then(response => {
+                        $scope.saveStatus[record.id] = {
+                            saving: false,
+                            saved: true,
+                            savedAt: response.data.savedAt
+                        };
+                        // Update stats after successful save
+                        loadStats();
+                    })
+                    .catch(error => {
+                        console.error('Save error:', error);
+                        $scope.saveStatus[record.id] = {
+                            saving: false,
+                            saved: false,
+                            error: 'Failed to save'
+                        };
+                    });
+            };
+
+            // Update risk reason handler
+            $scope.updateRiskReason = function(record) {
+                if (record.risk_status !== 'Risky') {
+                    record.risk_reason = '';
+                }
+                $scope.autoSave(record);
+            };
+
+            // Update loadStats to handle time metrics and deadline information
+            function loadStats() {
+                $http.get('/api/audit/stats', {  // Changed from '/api/records/stats' to '/api/audit/stats'
+                    params: { auditor: $scope.currentUser.username }
+                })
+                .then(response => {
+                    $scope.stats = response.data;
+                    $scope.completedCount = response.data.completed;
+                    $scope.pendingCount = response.data.pending;
+                    $scope.totalRecords = response.data.total;
+                    $scope.completionPercentage = Math.round(($scope.completedCount / $scope.totalRecords) * 100) || 0;
+                    $scope.timeRemaining = response.data.estimatedDaysRemaining + ' days';
+                    $scope.elapsedTime = response.data.elapsedTime;
+                    
+                    // Update deadline warning colors
+                    if (response.data.isPastDeadline) {
+                        document.documentElement.style.setProperty('--deadline-color', 'var(--bs-danger)');
+                    } else if (response.data.remainingDays < 7) {
+                        document.documentElement.style.setProperty('--deadline-color', 'var(--bs-warning)');
+                    } else {
+                        document.documentElement.style.setProperty('--deadline-color', 'var(--bs-info)');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading stats:', error);
+                    $scope.stats = {
+                        total: 0,
+                        completed: 0,
+                        pending: 0,
+                        elapsedDays: 0,
+                        recordsPerDay: 0,
+                        estimatedDaysRemaining: 0,
+                        elapsedTime: '0h 0m',
+                        timeRemaining: 'N/A',
+                        isPastDeadline: false
+                    };
+                });
+            }
+
+            // Call loadStats immediately and after changes
+            loadStats();
+
+            // Add auto-refresh for elapsed time
+            const timeUpdateInterval = setInterval(() => {
+                loadStats();
+            }, 60000); // Update every minute
+
+            // Clean up interval on controller destroy
+            $scope.$on('$destroy', function() {
+                clearInterval(timeUpdateInterval);
+            });
+
+            // Status display helper
+            $scope.getSaveStatus = function(recordId) {
+                const status = $scope.saveStatus[recordId];
+                if (!status) return '';
+                if (status.saving) return 'Saving...';
+                if (status.error) return 'Error: ' + status.error;
+                if (status.saved) {
+                    const time = new Date(status.savedAt);
+                    return 'Saved at ' + time.toLocaleTimeString();
+                }
+                return '';
+            };
+
+            // Add navigation functions
+            $scope.nextPage = function() {
+                if ($scope.currentPage < $scope.totalPages) {
+                    loadRecords($scope.currentPage + 1);
+                }
+            };
+
+            $scope.previousPage = function() {
+                if ($scope.currentPage > 1) {
+                    loadRecords($scope.currentPage - 1);
+                }
+            };
+
+            $scope.goToPage = function(page) {
+                if (page >= 1 && page <= $scope.totalPages) {
+                    loadRecords(page);
+                }
+            };
+
+            // Add search function with debounce
+            let searchTimeout;
+            $scope.search = function() {
+                if (searchTimeout) {
+                    clearTimeout(searchTimeout);
+                }
+                searchTimeout = setTimeout(function() {
+                    $scope.currentPage = 1;
+                    loadRecords(1);
+                    $scope.$apply();
+                }, 300);
+            };
+
+            // Add pageRange function for pagination
+            $scope.pageRange = function() {
+                let start = Math.max(2, currentPage - 1);
+                let end = Math.min(totalPages - 1, currentPage + 1);
+                
+                if (currentPage <= 2) {
+                    end = Math.min(4, totalPages - 1);
+                }
+                if (currentPage >= totalPages - 1) {
+                    start = Math.max(2, totalPages - 3);
+                }
+                
+                let pages = [];
+                for (let i = start; i <= end; i++) {
+                    pages.push(i);
+                }
+                return pages;
+            };
+
             // ...existing pagination code...
         }
     ]);
