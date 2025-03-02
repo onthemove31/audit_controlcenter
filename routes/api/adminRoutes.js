@@ -239,9 +239,22 @@ router.post('/reaudit-selection', async (req, res) => {
 router.get('/export-records', async (req, res) => {
     try {
         const records = await DatabaseService.query(`
-            SELECT * FROM audit_records
-            WHERE auditor IS NOT NULL
-            ORDER BY auditor, id
+            SELECT 
+                website_name,
+                brand_name,
+                sm_classification,
+                brand_matches_website,
+                dtc_status,
+                risk_status,
+                risk_reason,
+                redirects,
+                redirected_url,
+                model_suggestion,
+                comments,
+                auditor,
+                audit_date
+            FROM audit_records
+            ORDER BY id
         `);
 
         if (!records || !records.length) {
@@ -249,31 +262,33 @@ router.get('/export-records', async (req, res) => {
         }
 
         // Set headers for CSV download
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', 'attachment; filename=audit_records_' + new Date().toISOString().split('T')[0] + '.csv');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', 'attachment; filename="audit_records_' + new Date().toISOString().split('T')[0] + '.csv"');
 
-        // Write CSV header
-        const headers = Object.keys(records[0]).join(',') + '\n';
-        res.write(headers);
+        // Create CSV string
+        let csv = '';
+        
+        // Add headers
+        const headers = Object.keys(records[0]);
+        csv += headers.join(',') + '\n';
 
-        // Write records
+        // Add data rows
         records.forEach(record => {
-            const values = Object.values(record).map(value => {
+            const row = headers.map(header => {
+                const value = record[header];
                 if (value === null || value === undefined) return '';
-                if (typeof value === 'string') {
-                    // Escape quotes and wrap in quotes if contains special chars
-                    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-                        return `"${value.replace(/"/g, '""')}"`;
-                    }
+                // Escape quotes and wrap in quotes if needed
+                const stringValue = String(value);
+                if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+                    return `"${stringValue.replace(/"/g, '""')}"`;
                 }
-                return value;
+                return stringValue;
             });
-            res.write(values.join(',') + '\n');
+            csv += row.join(',') + '\n';
         });
 
-        res.end();
+        // Send the CSV
+        res.send(csv);
     } catch (error) {
         console.error('Export error:', error);
         res.status(500).json({ error: 'Failed to export records' });
