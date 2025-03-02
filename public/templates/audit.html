@@ -91,7 +91,13 @@
                 <tr ng-repeat="record in currentRecords" 
                     ng-class="{'saved': record.saveStatus === 'Saved successfully'}">
                     <td class="website-cell" title="{{record.website_name}}">
-                        {{record.website_name}}
+                        <a href="{{getNormalizedUrl(record.website_name)}}" 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           class="text-decoration-none">
+                            {{getDisplayUrl(record.website_name)}}
+                            <i class="bi bi-box-arrow-up-right ms-1 small"></i>
+                        </a>
                     </td>
                     <td>{{record.brand_name}}</td>
                     <td>

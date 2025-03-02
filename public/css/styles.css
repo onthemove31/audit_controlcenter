@@ -349,3 +349,20 @@
         font-size: 0.875rem;
     }
 }
+
+/* Website link styles */
+.website-cell a {
+    color: #0d6efd;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.website-cell a:hover {
+    color: #0a58ca;
+    text-decoration: underline !important;
+}
+
+.website-cell .bi {
+    font-size: 0.75em;
+}

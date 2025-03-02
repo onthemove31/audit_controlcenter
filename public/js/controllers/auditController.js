@@ -267,6 +267,26 @@ angular.module('auditApp')
                 $scope.autoSave(record);
             };
 
+            // Add URL normalization helper
+            $scope.getNormalizedUrl = function(website) {
+                if (!website) return '#';
+                
+                // Remove any existing protocol
+                let url = website.replace(/^(https?:\/\/)?(www\.)?/, '');
+                
+                // Remove any trailing path or query parameters
+                url = url.split('/')[0];
+                
+                // Add https protocol
+                return 'https://' + url;
+            };
+
+            // Add URL display helper
+            $scope.getDisplayUrl = function(website) {
+                if (!website) return '';
+                return website.replace(/^(https?:\/\/)?(www\.)?/, '');
+            };
+
             // ...existing pagination code...
         }
     ]);
