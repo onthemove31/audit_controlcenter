@@ -80,9 +80,9 @@
                     <th class="col-match">Brand Match</th>
                     <th class="col-dtc">DTC Status</th>
                     <th class="col-risk">Risk Status</th>
+                    <th class="col-reason">Risk Reason</th>
                     <th class="col-redirects">Redirects</th>
                     <th class="col-url">Redirect URL</th>
-                    <th class="col-reason">Risk Reason</th>
                     <th class="col-comments">Comments</th>
                     <th class="col-status">Status</th>
                 </tr>
@@ -126,6 +126,14 @@
                         </select>
                     </td>
                     <td>
+                        <textarea ng-if="record.risk_status === 'Risky'"
+                                ng-model="record.risk_reason"
+                                ng-change="autoSave(record)"
+                                ng-disabled="isRecordLocked(record)"
+                                placeholder="Enter risk reason..."
+                                rows="2"></textarea>
+                    </td>
+                    <td>
                         <select ng-model="record.redirects" 
                                 ng-change="autoSave(record)"
                                 ng-disabled="isRecordLocked(record)">
@@ -139,14 +147,6 @@
                                 ng-change="autoSave(record)"
                                 placeholder="Enter redirect URL..."
                                 ng-disabled="isRecordLocked(record)"
-                                rows="2"></textarea>
-                    </td>
-                    <td>
-                        <textarea ng-if="record.risk_status === 'Risky'"
-                                ng-model="record.risk_reason"
-                                ng-change="autoSave(record)"
-                                ng-disabled="isRecordLocked(record)"
-                                placeholder="Enter risk reason..."
                                 rows="2"></textarea>
                     </td>
                     <td>
