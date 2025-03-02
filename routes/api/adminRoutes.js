@@ -290,23 +290,26 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     let insertedCount = 0;
 
     try {
-        // Add debug logging for column headers
-        let headers = null;
-        
         fs.createReadStream(req.file.path)
             .pipe(csv({
                 mapHeaders: ({ header }) => {
-                    console.log('Original header:', header); // Debug log
+                    console.log('Original header:', header);
                     const normalizedHeader = header.trim().toLowerCase().replace(/[\s-]/g, '_');
-                    console.log('Normalized header:', normalizedHeader); // Debug log
+                    console.log('Normalized header:', normalizedHeader);
                     return normalizedHeader;
                 }
             }))
             .on('headers', (headerList) => {
-                console.log('CSV Headers:', headerList); // Debug log
+                console.log('CSV Headers:', headerList);
             })
             .on('data', (data) => {
-                console.log('Row data:', data); // Debug log
+                console.log('Row data:', data);
+
+                // Check if record is already audited
+                const isAudited = data.dtc_status || 
+                                data.risk_status || 
+                                data.brand_matches_website ||
+                                data.comments;
 
                 // Normalize the data structure
                 const normalizedData = {
@@ -320,10 +323,13 @@ router.post('/upload', upload.single('file'), async (req, res) => {
                     redirects: data.redirects || '',
                     redirected_url: data.redirected_url || data.redirect_url || '',
                     model_suggestion: data.model_suggestion || '',
-                    comments: data.comments || ''
+                    comments: data.comments || '',
+                    // Add audit information if present
+                    auditor: data.auditor || null,
+                    audit_date: isAudited ? new Date().toISOString() : null
                 };
 
-                console.log('Normalized data:', normalizedData); // Debug log
+                console.log('Normalized data:', normalizedData);
                 results.push(normalizedData);
             })
             .on('end', async () => {
@@ -343,8 +349,10 @@ router.post('/upload', upload.single('file'), async (req, res) => {
                                 redirects,
                                 redirected_url,
                                 model_suggestion,
-                                comments
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                                comments,
+                                auditor,
+                                audit_date
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                             [
                                 row.website_name,
                                 row.brand_name,
@@ -356,7 +364,9 @@ router.post('/upload', upload.single('file'), async (req, res) => {
                                 row.redirects,
                                 row.redirected_url,
                                 row.model_suggestion,
-                                row.comments
+                                row.comments,
+                                row.auditor,
+                                row.audit_date
                             ]
                         );
                         insertedCount++;
@@ -370,7 +380,9 @@ router.post('/upload', upload.single('file'), async (req, res) => {
                     res.json({
                         success: true,
                         recordsProcessed: results.length,
-                        recordsInserted: insertedCount
+                        recordsInserted: insertedCount,
+                        auditedCount: results.filter(r => r.audit_date).length,
+                        unauditedCount: results.filter(r => !r.audit_date).length
                     });
                 } catch (error) {
                     await DatabaseService.run('ROLLBACK');
