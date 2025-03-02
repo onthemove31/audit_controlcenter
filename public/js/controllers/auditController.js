@@ -14,6 +14,14 @@ angular.module('auditApp')
             $scope.currentRecords = [];
             $scope.itemsPerPage = 10;
 
+            // Add page size handling
+            $scope.itemsPerPage = 10; // Default value
+
+            $scope.changePageSize = function() {
+                $scope.currentPage = 1; // Reset to first page
+                loadRecords(1);
+            };
+
             // Add logout function
             $scope.logout = function() {
                 AuthService.logout();
@@ -81,7 +89,6 @@ angular.module('auditApp')
             $scope.autoSave = function(record) {
                 if (!record) return;
                 
-                // Update save status
                 $scope.saveStatus[record.id] = {
                     saving: true,
                     saved: false,
@@ -89,6 +96,15 @@ angular.module('auditApp')
                 };
 
                 record.auditor = $scope.currentUser.username;
+                
+                // If record is locked, only save DTC status
+                if ($scope.isRecordLocked(record)) {
+                    record = {
+                        id: record.id,
+                        auditor: record.auditor,
+                        dtc_status: record.dtc_status
+                    };
+                }
                 
                 $http.post('/api/audit/save', record)  // Changed from '/api/records/save' to '/api/audit/save'
                     .then(response => {
@@ -232,6 +248,23 @@ angular.module('auditApp')
                     pages.push(i);
                 }
                 return pages;
+            };
+
+            $scope.isRecordLocked = function(record) {
+                return record.dtc_status === 'Not Responsive' || record.dtc_status === 'Not English';
+            };
+
+            $scope.handleDTCStatusChange = function(record) {
+                if ($scope.isRecordLocked(record)) {
+                    // Clear all fields when Not Responsive or Not English is selected
+                    record.brand_matches_website = '';
+                    record.risk_status = '';
+                    record.risk_reason = '';
+                    record.redirects = '';
+                    record.redirected_url = '';
+                    record.comments = ''; // Clear comments as well
+                }
+                $scope.autoSave(record);
             };
 
             // ...existing pagination code...

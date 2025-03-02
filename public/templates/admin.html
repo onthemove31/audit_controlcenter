@@ -45,31 +45,26 @@
         </div>
         <div class="card-body">
             <div class="upload-section">
-                <input type="file" 
-                       id="csvFile" 
-                       accept=".csv" 
-                       style="display: none;"
-                       onchange="angular.element(this).scope().handleFileSelect(this)">
-                <button class="btn btn-primary" 
-                        onclick="document.getElementById('csvFile').click()"
-                        ng-disabled="upload.inProgress">
-                    Select CSV File
-                </button>
+                <form ng-submit="uploadFile()" enctype="multipart/form-data">
+                    <input type="file" 
+                           id="csvFile"
+                           name="file"
+                           accept=".csv"
+                           class="form-control"
+                           onchange="angular.element(this).scope().fileSelected(this)">
+                    <button type="submit" 
+                            class="btn btn-primary mt-2"
+                            ng-disabled="!selectedFile || uploading">
+                        Upload CSV
+                    </button>
+                </form>
                 
-                <div class="progress mt-3" ng-if="upload.inProgress">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                         role="progressbar" 
-                         style="width: {{upload.progress}}%">
-                        {{upload.progress}}%
+                <div class="progress mt-3" ng-if="uploading">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated"
+                         role="progressbar"
+                         ng-style="{'width': uploadProgress + '%'}">
+                        {{uploadProgress}}%
                     </div>
-                </div>
-                
-                <div class="alert alert-success mt-3" ng-if="upload.success">
-                    Upload completed successfully!
-                </div>
-                
-                <div class="alert alert-danger mt-3" ng-if="upload.error">
-                    {{upload.error}}
                 </div>
             </div>
         </div>

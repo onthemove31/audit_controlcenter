@@ -1,6 +1,25 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const csv = require('csv-parser');
+const fs = require('fs');
 const DatabaseService = require('../../services/databaseService');
+
+// Configure multer for file upload
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadDir = './uploads';
+        if (!fs.existsSync(uploadDir)){
+            fs.mkdirSync(uploadDir);
+        }
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        cb(null, 'data_' + Date.now() + '.csv');
+    }
+});
+
+const upload = multer({ storage: storage });
 
 router.get('/users', async (req, res) => {
     try {
@@ -258,6 +277,110 @@ router.get('/export-records', async (req, res) => {
     } catch (error) {
         console.error('Export error:', error);
         res.status(500).json({ error: 'Failed to export records' });
+    }
+});
+
+// Upload endpoint
+router.post('/upload', upload.single('file'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const results = [];
+    let insertedCount = 0;
+
+    try {
+        // Add debug logging for column headers
+        let headers = null;
+        
+        fs.createReadStream(req.file.path)
+            .pipe(csv({
+                mapHeaders: ({ header }) => {
+                    console.log('Original header:', header); // Debug log
+                    const normalizedHeader = header.trim().toLowerCase().replace(/[\s-]/g, '_');
+                    console.log('Normalized header:', normalizedHeader); // Debug log
+                    return normalizedHeader;
+                }
+            }))
+            .on('headers', (headerList) => {
+                console.log('CSV Headers:', headerList); // Debug log
+            })
+            .on('data', (data) => {
+                console.log('Row data:', data); // Debug log
+
+                // Normalize the data structure
+                const normalizedData = {
+                    website_name: data.website_name || data.website || data.url || data.domain || '',
+                    brand_name: data.brand_name || data.brand || '',
+                    sm_classification: data.sm_classification || data.classification || '',
+                    brand_matches_website: data.brand_matches_website || '',
+                    dtc_status: data.dtc_status || '',
+                    risk_status: data.risk_status || '',
+                    risk_reason: data.risk_reason || '',
+                    redirects: data.redirects || '',
+                    redirected_url: data.redirected_url || data.redirect_url || '',
+                    model_suggestion: data.model_suggestion || '',
+                    comments: data.comments || ''
+                };
+
+                console.log('Normalized data:', normalizedData); // Debug log
+                results.push(normalizedData);
+            })
+            .on('end', async () => {
+                try {
+                    await DatabaseService.run('BEGIN TRANSACTION');
+
+                    for (const row of results) {
+                        await DatabaseService.run(`
+                            INSERT INTO audit_records (
+                                website_name,
+                                brand_name,
+                                sm_classification,
+                                brand_matches_website,
+                                dtc_status,
+                                risk_status,
+                                risk_reason,
+                                redirects,
+                                redirected_url,
+                                model_suggestion,
+                                comments
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                            [
+                                row.website_name,
+                                row.brand_name,
+                                row.sm_classification,
+                                row.brand_matches_website,
+                                row.dtc_status,
+                                row.risk_status,
+                                row.risk_reason,
+                                row.redirects,
+                                row.redirected_url,
+                                row.model_suggestion,
+                                row.comments
+                            ]
+                        );
+                        insertedCount++;
+                    }
+
+                    await DatabaseService.run('COMMIT');
+
+                    // Clean up uploaded file
+                    fs.unlinkSync(req.file.path);
+
+                    res.json({
+                        success: true,
+                        recordsProcessed: results.length,
+                        recordsInserted: insertedCount
+                    });
+                } catch (error) {
+                    await DatabaseService.run('ROLLBACK');
+                    console.error('Insert error:', error);
+                    res.status(500).json({ error: 'Database insertion failed' });
+                }
+            });
+    } catch (error) {
+        console.error('Upload error:', error);
+        res.status(500).json({ error: 'File processing failed' });
     }
 });
 

@@ -136,7 +136,10 @@ router.post('/save', async (req, res) => {
                 risk_status = ?,
                 risk_reason = ?,
                 audit_date = datetime('now'),
-                model_suggestion = ?
+                model_suggestion = ?,
+                comments = ?,
+                redirects = ?,
+                redirected_url = ?
             WHERE id = ? AND auditor = ?`,
             [
                 record.brand_matches_website || null,
@@ -144,6 +147,9 @@ router.post('/save', async (req, res) => {
                 record.risk_status || null,
                 record.risk_reason || null,
                 record.model_suggestion || null,
+                record.comments || null,
+                record.redirects || null,
+                record.redirected_url || null,
                 record.id,
                 record.auditor
             ]

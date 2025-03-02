@@ -338,5 +338,48 @@ angular.module('auditApp')
                         alert('Failed to export records');
                     });
             };
+
+            $scope.selectedFile = null;
+            $scope.uploading = false;
+            $scope.uploadProgress = 0;
+
+            $scope.fileSelected = function(element) {
+                $scope.selectedFile = element.files[0];
+                $scope.$apply();
+            };
+
+            $scope.uploadFile = function() {
+                if (!$scope.selectedFile) return;
+
+                const formData = new FormData();
+                formData.append('file', $scope.selectedFile);
+                
+                $scope.uploading = true;
+                $scope.uploadProgress = 0;
+
+                $http.post('/api/admin/upload', formData, {
+                    transformRequest: angular.identity,
+                    headers: {'Content-Type': undefined},
+                    uploadEventHandlers: {
+                        progress: function(e) {
+                            if (e.lengthComputable) {
+                                $scope.uploadProgress = Math.round((e.loaded * 100) / e.total);
+                            }
+                        }
+                    }
+                })
+                .then(response => {
+                    alert(`Successfully uploaded ${response.data.recordsInserted} records`);
+                    $scope.selectedFile = null;
+                    document.getElementById('csvFile').value = '';
+                })
+                .catch(error => {
+                    console.error('Upload error:', error);
+                    alert('Upload failed: ' + (error.data?.error || 'Unknown error'));
+                })
+                .finally(() => {
+                    $scope.uploading = false;
+                });
+            };
         }
     ]);

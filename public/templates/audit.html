@@ -56,6 +56,21 @@
         </div>
     </div>
 
+    <!-- Add page size selector before table -->
+    <div class="page-size-selector">
+        <label for="pageSize">Records per page:</label>
+        <select id="pageSize" 
+                class="form-select form-select-sm" 
+                style="width: auto;"
+                ng-model="itemsPerPage"
+                ng-change="changePageSize()">
+            <option value="10">10</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+        </select>
+    </div>
+
     <div class="table-wrapper">
         <table class="table table-bordered table-hover records-table">
             <thead class="table-light">
@@ -68,6 +83,7 @@
                     <th class="col-redirects">Redirects</th>
                     <th class="col-url">Redirect URL</th>
                     <th class="col-reason">Risk Reason</th>
+                    <th class="col-comments">Comments</th>
                     <th class="col-status">Status</th>
                 </tr>
             </thead>
@@ -81,6 +97,7 @@
                     <td>
                         <select ng-model="record.brand_matches_website" 
                                 ng-change="autoSave(record)"
+                                ng-disabled="isRecordLocked(record) || record.dtc_status === 'Not Responsive' || record.dtc_status === 'Not English'"
                                 class="form-select">
                             <option value="">Select...</option>
                             <option value="Yes">Yes</option>
@@ -89,17 +106,20 @@
                     </td>
                     <td>
                         <select ng-model="record.dtc_status" 
-                                ng-change="autoSave(record)"
+                                ng-change="handleDTCStatusChange(record)"
                                 class="form-select">
                             <option value="">Select...</option>
                             <option value="DTC">DTC</option>
                             <option value="Not DTC">Not DTC</option>
+                            <option value="Not Responsive">Not Responsive</option>
+                            <option value="Not English">Not English</option>
                         </select>
                     </td>
                     <td>
                         <select ng-model="record.risk_status" 
                                 ng-change="updateRiskReason(record)"
-                                class="form-select">
+                                class="form-select"
+                                ng-disabled="isRecordLocked(record)">
                             <option value="">Select...</option>
                             <option value="Risky">Risky</option>
                             <option value="Not Risky">Not Risky</option>
@@ -107,7 +127,8 @@
                     </td>
                     <td>
                         <select ng-model="record.redirects" 
-                                ng-change="autoSave(record)">
+                                ng-change="autoSave(record)"
+                                ng-disabled="isRecordLocked(record)">
                             <option value="">Select...</option>
                             <option value="Yes">Yes</option>
                             <option value="No">No</option>
@@ -117,14 +138,25 @@
                         <textarea ng-model="record.redirected_url"
                                 ng-change="autoSave(record)"
                                 placeholder="Enter redirect URL..."
+                                ng-disabled="isRecordLocked(record)"
                                 rows="2"></textarea>
                     </td>
                     <td>
                         <textarea ng-if="record.risk_status === 'Risky'"
                                 ng-model="record.risk_reason"
                                 ng-change="autoSave(record)"
+                                ng-disabled="isRecordLocked(record)"
                                 placeholder="Enter risk reason..."
                                 rows="2"></textarea>
+                    </td>
+                    <td>
+                        <textarea ng-model="record.comments"
+                                ng-change="autoSave(record)"
+                                placeholder="Enter any comments..."
+                                ng-disabled="isRecordLocked(record)"
+                                rows="2"
+                                class="form-control">
+                        </textarea>
                     </td>
                     <td class="status-cell">
                         <small ng-if="saveStatus[record.id]" 
