@@ -223,10 +223,20 @@ angular.module('auditApp')
                     });
             }
 
+            // Add completion percentage calculator
+            $scope.getCompletionPercentage = function() {
+                if (!$scope.stats.total) return 0;
+                const completed = Number($scope.stats.audited) || 0;
+                const total = Number($scope.stats.total) || 0;
+                return total > 0 ? Math.round((completed / total) * 100) : 0;
+            };
+
             // Helper Functions
             $scope.getCompletionRate = function(stat) {
-                if (!stat || !stat.allocated) return 0;
-                return Math.round((Number(stat.completed) / Number(stat.allocated)) * 100);
+                if (!stat || !stat.total) return 0;
+                const completed = Number(stat.completed) || 0;
+                const total = Number(stat.allocated) || 0;
+                return total > 0 ? Math.round((completed / total) * 100) : 0;
             };
 
             $scope.getTotalAllocated = function() {

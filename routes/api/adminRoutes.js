@@ -240,6 +240,7 @@ router.get('/export-records', async (req, res) => {
     try {
         const records = await DatabaseService.query(`
             SELECT 
+                work_id,
                 website_name,
                 brand_name,
                 sm_classification,
@@ -331,6 +332,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
                 // Normalize the data structure
                 const normalizedData = {
+                    work_id: data.work_id || null,  // Add work_id handling
                     website_name: data.website_name || data.website || data.url || data.domain || '',
                     brand_name: data.brand_name || data.brand || '',
                     sm_classification: data.sm_classification || data.classification || '',
@@ -365,6 +367,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
                     for (const row of results) {
                         await DatabaseService.run(`
                             INSERT INTO audit_records (
+                                work_id,
                                 website_name,
                                 brand_name,
                                 sm_classification,
@@ -378,8 +381,9 @@ router.post('/upload', upload.single('file'), async (req, res) => {
                                 comments,
                                 auditor,
                                 audit_date
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                             [
+                                row.work_id,
                                 row.website_name,
                                 row.brand_name,
                                 row.sm_classification,

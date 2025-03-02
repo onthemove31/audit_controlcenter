@@ -251,7 +251,27 @@
 }
 
 .progress {
-    height: 1.5rem;
+    height: 25px;  /* Match the container height */
+    background-color: #e9ecef;
+    border-radius: 0 !important;
+    margin: 0 !important;  /* Remove any margins */
+    padding: 0 !important; /* Remove any padding */
+    display: flex;  /* Ensure proper alignment */
+    align-items: stretch; /* Stretch child to fill height */
+}
+
+.progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 500;
+    transition: width 0.6s ease;
+    background-color: #198754;
+    border-radius: 0 !important;
+    margin: 0 !important;  /* Remove any margins */
+    padding: 0 !important; /* Remove any padding */
+    height: 100%;         /* Fill full height */
 }
 
 /* Admin dashboard styles */

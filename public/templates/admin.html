@@ -39,6 +39,24 @@
         </div>
     </div>
 
+    <!-- Add Overall Progress Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="card-title mb-0">Overall Progress</h5>
+                <span class="fs-4 fw-bold">{{getCompletionPercentage()}}%</span>
+            </div>
+            <div class="progress" style="height: 25px;">
+                <div class="progress-bar" 
+                     role="progressbar" 
+                     ng-style="{'width': getCompletionPercentage() + '%'}"
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card mb-4">
         <div class="card-header">
             <h5 class="mb-0">Upload Records</h5>
@@ -231,16 +249,16 @@
                             <td>{{stat.pending}}</td>
                             <td>{{stat.completed}}</td>
                             <td>
-                                <div class="progress">
+                                <div class="progress" style="height: 20px;">
                                     <div class="progress-bar" 
                                          role="progressbar"
                                          aria-valuenow="{{getCompletionRate(stat)}}"
                                          aria-valuemin="0"
                                          aria-valuemax="100"
                                          ng-style="{'width': getCompletionRate(stat) + '%'}">
-                                        {{getCompletionRate(stat)}}%
                                     </div>
                                 </div>
+                                <small class="d-block mt-1">{{getCompletionRate(stat)}}%</small>
                             </td>
                         </tr>
                         <tr ng-if="auditorStats.length === 0">
