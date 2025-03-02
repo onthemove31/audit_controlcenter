@@ -288,28 +288,31 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
     const results = [];
     let insertedCount = 0;
+    let newAuditors = new Set();
 
     try {
+        // First, get existing auditors
+        const existingUsers = await DatabaseService.query('SELECT username FROM users');
+        const existingUsernames = new Set(existingUsers.map(u => u.username));
+
         fs.createReadStream(req.file.path)
             .pipe(csv({
                 mapHeaders: ({ header }) => {
-                    console.log('Original header:', header);
                     const normalizedHeader = header.trim().toLowerCase().replace(/[\s-]/g, '_');
-                    console.log('Normalized header:', normalizedHeader);
                     return normalizedHeader;
                 }
             }))
-            .on('headers', (headerList) => {
-                console.log('CSV Headers:', headerList);
-            })
             .on('data', (data) => {
-                console.log('Row data:', data);
-
-                // Check if record is already audited
+                // Check if record is already audited and has an auditor
                 const isAudited = data.dtc_status || 
                                 data.risk_status || 
                                 data.brand_matches_website ||
                                 data.comments;
+                
+                // If there's an auditor in the data that's not in our users list, note it
+                if (data.auditor && !existingUsernames.has(data.auditor)) {
+                    newAuditors.add(data.auditor);
+                }
 
                 // Normalize the data structure
                 const normalizedData = {
@@ -329,13 +332,21 @@ router.post('/upload', upload.single('file'), async (req, res) => {
                     audit_date: isAudited ? new Date().toISOString() : null
                 };
 
-                console.log('Normalized data:', normalizedData);
                 results.push(normalizedData);
             })
             .on('end', async () => {
                 try {
                     await DatabaseService.run('BEGIN TRANSACTION');
 
+                    // Add any new auditors found
+                    for (const auditor of newAuditors) {
+                        await DatabaseService.run(
+                            'INSERT INTO users (username, role) VALUES (?, ?)',
+                            [auditor, 'auditor']
+                        );
+                    }
+
+                    // Insert records
                     for (const row of results) {
                         await DatabaseService.run(`
                             INSERT INTO audit_records (
@@ -382,7 +393,8 @@ router.post('/upload', upload.single('file'), async (req, res) => {
                         recordsProcessed: results.length,
                         recordsInserted: insertedCount,
                         auditedCount: results.filter(r => r.audit_date).length,
-                        unauditedCount: results.filter(r => !r.audit_date).length
+                        unauditedCount: results.filter(r => !r.audit_date).length,
+                        newAuditorsAdded: Array.from(newAuditors)
                     });
                 } catch (error) {
                     await DatabaseService.run('ROLLBACK');
