@@ -52,3 +52,5 @@ debug/
 test_audit.csv
 missing_data.csv
 uploads/
+migration/
+*.csv
