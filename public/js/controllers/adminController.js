@@ -203,7 +203,6 @@ angular.module('auditApp')
                     .then(function(response) {
                         console.log('Raw auditor stats:', response.data);
                         
-                        // Simpler response handling without timeout
                         if (Array.isArray(response.data)) {
                             $scope.auditorStats = response.data.map(stat => ({
                                 username: stat.username,
@@ -211,11 +210,17 @@ angular.module('auditApp')
                                 pending: Number(stat.pending) || 0,
                                 completed: Number(stat.completed) || 0
                             }));
+
+                            // Verify metrics
+                            console.log('Processed stats:', $scope.auditorStats);
+                            console.log('Total allocated:', $scope.getTotalAllocated());
+                            console.log('Total pending:', $scope.getTotalPending());
+                            console.log('Total completed:', $scope.getTotalCompleted());
+                            console.log('Overall completion:', $scope.getOverallCompletionRate() + '%');
                         } else {
                             console.error('Invalid auditor stats response:', response.data);
                             $scope.auditorStats = [];
                         }
-                        console.log('Processed stats:', $scope.auditorStats);
                     })
                     .catch(function(error) {
                         console.error('Error loading auditor stats:', error);
@@ -233,30 +238,31 @@ angular.module('auditApp')
 
             // Helper Functions
             $scope.getCompletionRate = function(stat) {
-                if (!stat || !stat.total) return 0;
+                if (!stat || !stat.allocated) return 0;
+                const allocated = Number(stat.allocated) || 0;
                 const completed = Number(stat.completed) || 0;
-                const total = Number(stat.allocated) || 0;
-                return total > 0 ? Math.round((completed / total) * 100) : 0;
+                return Math.round((completed / allocated) * 100);
             };
 
             $scope.getTotalAllocated = function() {
                 if (!$scope.auditorStats || !$scope.auditorStats.length) return 0;
-                return $scope.auditorStats.reduce((sum, stat) => sum + Number(stat.allocated), 0);
+                return $scope.auditorStats.reduce((sum, stat) => sum + (Number(stat.allocated) || 0), 0);
             };
 
             $scope.getTotalPending = function() {
                 if (!$scope.auditorStats || !$scope.auditorStats.length) return 0;
-                return $scope.auditorStats.reduce((sum, stat) => sum + Number(stat.pending), 0);
+                return $scope.auditorStats.reduce((sum, stat) => sum + (Number(stat.pending) || 0), 0);
             };
 
             $scope.getTotalCompleted = function() {
                 if (!$scope.auditorStats || !$scope.auditorStats.length) return 0;
-                return $scope.auditorStats.reduce((sum, stat) => sum + Number(stat.completed), 0);
+                return $scope.auditorStats.reduce((sum, stat) => sum + (Number(stat.completed) || 0), 0);
             };
 
             $scope.getOverallCompletionRate = function() {
                 const total = $scope.getTotalAllocated();
-                return total ? Math.round(($scope.getTotalCompleted() / total) * 100) : 0;
+                const completed = $scope.getTotalCompleted();
+                return total > 0 ? Math.round((completed / total) * 100) : 0;
             };
 
             $scope.logout = function() {
