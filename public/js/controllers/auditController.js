@@ -156,6 +156,16 @@ angular.module('auditApp')
                     } else {
                         document.documentElement.style.setProperty('--deadline-color', 'var(--bs-info)');
                     }
+
+                    // Check if all records are completed
+                    if ($scope.stats.pending === 0 && $scope.stats.total > 0) {
+                        // Show congrats modal if not shown before
+                        if (!localStorage.getItem('congratsShown_' + $scope.currentUser.username)) {
+                            const congratsModal = new bootstrap.Modal(document.getElementById('congratsModal'));
+                            congratsModal.show();
+                            localStorage.setItem('congratsShown_' + $scope.currentUser.username, 'true');
+                        }
+                    }
                 })
                 .catch(error => {
                     console.error('Error loading stats:', error);

@@ -59,6 +59,23 @@ router.get('/stats', async (req, res) => {
         );
         stats.activeAuditors = activeAuditors.count;
 
+        // Add deadline calculation
+        const deadline = new Date('2025-03-07T13:30:00.000Z'); // 7 PM IST in UTC
+        const now = new Date();
+        
+        // Calculate time remaining
+        const remainingMs = deadline - now;
+        const remainingDays = Math.floor(remainingMs / (1000 * 60 * 60 * 24));
+        const remainingHours = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const remainingMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+
+        // Add deadline info to stats
+        stats.timeRemaining = `${remainingDays}d ${remainingHours}h ${remainingMinutes}m`;
+        stats.remainingDays = remainingDays;
+        stats.remainingHours = remainingHours;
+        stats.remainingMinutes = remainingMinutes;
+        stats.isPastDeadline = now > deadline;
+
         res.json(stats);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -241,6 +258,7 @@ router.get('/export-records', async (req, res) => {
         const records = await DatabaseService.query(`
             SELECT 
                 work_id,
+                gcor_id,
                 website_name,
                 brand_name,
                 sm_classification,
@@ -333,6 +351,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
                 // Normalize the data structure
                 const normalizedData = {
                     work_id: data.work_id || null,  // Add work_id handling
+                    gcor_id: data.gcor_id || null,
                     website_name: data.website_name || data.website || data.url || data.domain || '',
                     brand_name: data.brand_name || data.brand || '',
                     sm_classification: data.sm_classification || data.classification || '',
@@ -368,6 +387,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
                         await DatabaseService.run(`
                             INSERT INTO audit_records (
                                 work_id,
+                                gcor_id,
                                 website_name,
                                 brand_name,
                                 sm_classification,
@@ -381,9 +401,10 @@ router.post('/upload', upload.single('file'), async (req, res) => {
                                 comments,
                                 auditor,
                                 audit_date
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                             [
                                 row.work_id,
+                                row.gcor_id,
                                 row.website_name,
                                 row.brand_name,
                                 row.sm_classification,

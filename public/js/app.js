@@ -1,4 +1,4 @@
-var app = angular.module('auditApp', ['ngRoute']);
+var app = angular.module('auditApp', ['ngRoute', 'ngSanitize']);
 
 app.config(['$routeProvider', function($routeProvider) {
     $routeProvider
@@ -36,4 +36,19 @@ app.config(['$routeProvider', function($routeProvider) {
         .otherwise({
             redirectTo: '/login'
         });
+}]);
+
+// Update number formatting configuration
+app.config(['$localeProvider', function($localeProvider) {
+    var NUMBER_FORMATS = $localeProvider.$get().NUMBER_FORMATS;
+    NUMBER_FORMATS.GROUP_SEP = ',';
+    NUMBER_FORMATS.PATTERNS[0].gSize = 3;
+}]);
+
+// Add error handling
+app.run(['$rootScope', '$location', function($rootScope, $location) {
+    $rootScope.$on('$routeChangeError', function() {
+        console.error('Route change failed');
+        $location.path('/login');
+    });
 }]);

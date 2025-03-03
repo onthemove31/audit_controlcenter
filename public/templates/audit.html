@@ -75,6 +75,8 @@
         <table class="table table-bordered table-hover records-table">
             <thead class="table-light">
                 <tr>
+                    <th class="col-id">Work ID</th>
+                    <th class="col-id">GCOR ID</th>
                     <th class="col-website">Website</th>
                     <th class="col-brand">Brand</th>
                     <th class="col-match">Brand Match</th>
@@ -90,6 +92,8 @@
             <tbody>
                 <tr ng-repeat="record in currentRecords" 
                     ng-class="{'saved': record.saveStatus === 'Saved successfully'}">
+                    <td>{{record.work_id}}</td>
+                    <td>{{record.gcor_id}}</td>
                     <td class="website-cell" title="{{record.website_name}}">
                         <a href="{{getNormalizedUrl(record.website_name)}}" 
                            target="_blank" 
@@ -223,3 +227,24 @@
         </div>
     </nav>
 </div>
+
+<div class="modal fade" id="congratsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">🎉 Congratulations!</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <h4>Amazing Work! 🌟</h4>
+                <p class="mb-0">You've completed all your allocated records.</p>
+                <p class="text-muted">Thank you for your dedication!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" data-bs-dismiss="modal">Thank you!</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div> <!-- end of audit-container -->

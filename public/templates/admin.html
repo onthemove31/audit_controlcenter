@@ -12,28 +12,37 @@
         </div>
     </nav>
 
+    <!-- Add this after the top navbar and before the stats cards -->
+    <div class="deadline-banner mb-4">
+        <div class="d-flex justify-content-end align-items-center">
+            <span ng-class="{'text-danger': stats.isPastDeadline, 'text-warning': stats.remainingDays < 7}">
+                Time to Deadline: {{stats.timeRemaining}}
+            </span>
+        </div>
+    </div>
+
     <div class="row mb-4">
         <div class="col-md-4">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Total Records</h5>
-                    <h2 class="card-text">{{stats.total || 0}}</h2>
+                    <h5 class="card-title">Target Websites</h5>
+                    <h2 class="card-text">{{stats.total | number}}</h2>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Audited Records</h5>
-                    <h2 class="card-text">{{stats.audited || 0}}</h2>
+                    <h5 class="card-title">Audited Websites</h5>
+                    <h2 class="card-text">{{stats.audited | number}}</h2>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Active Auditors</h5>
-                    <h2 class="card-text">{{stats.activeAuditors || 0}}</h2>
+                    <h5 class="card-title">Total Auditors (Active/Inactive)</h5>
+                    <h2 class="card-text">{{stats.activeAuditors | number}}</h2>
                 </div>
             </div>
         </div>

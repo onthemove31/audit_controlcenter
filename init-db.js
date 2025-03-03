@@ -19,15 +19,18 @@ if (fs.existsSync('./audit.db')) {
 const db = new sqlite3.Database('./audit.db');
 
 db.serialize(() => {
-    // Create tables with ALL required columns
+    // Create users table
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY,
         username TEXT UNIQUE,
         role TEXT
     )`);
 
+    // Create audit_records table with updated structure
     db.run(`CREATE TABLE IF NOT EXISTS audit_records (
-        id INTEGER PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        work_id TEXT,
+        gcor_id TEXT,
         website_name TEXT,
         brand_name TEXT,
         sm_classification TEXT,
@@ -37,13 +40,15 @@ db.serialize(() => {
         risk_reason TEXT,
         redirects TEXT,
         redirected_url TEXT,
+        model_suggestion TEXT,
+        comments TEXT,
         auditor TEXT,
         audit_date TEXT,
-        model_suggestion TEXT,
-        reaudit INTEGER DEFAULT 0,
-        assigned_date TEXT
+        assigned_date TEXT,
+        reaudit INTEGER DEFAULT 0
     )`);
 
+    // Create audit_logs table
     db.run(`CREATE TABLE IF NOT EXISTS audit_logs (
         id INTEGER PRIMARY KEY,
         record_id INTEGER,
@@ -52,6 +57,12 @@ db.serialize(() => {
         timestamp TEXT,
         changes TEXT
     )`);
+
+    // Create indices for performance
+    db.run('CREATE INDEX IF NOT EXISTS idx_audit_records_work_id ON audit_records(work_id)');
+    db.run('CREATE INDEX IF NOT EXISTS idx_audit_records_gcor_id ON audit_records(gcor_id)');
+    db.run('CREATE INDEX IF NOT EXISTS idx_audit_records_auditor ON audit_records(auditor)');
+    db.run('CREATE INDEX IF NOT EXISTS idx_audit_records_audit_date ON audit_records(audit_date)');
 
     // Create initial admin user
     db.run(`INSERT OR IGNORE INTO users (username, role) VALUES (?, ?)`, 

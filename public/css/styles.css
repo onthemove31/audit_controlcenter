@@ -222,6 +222,7 @@
 }
 
 /* Column widths */
+.records-table .col-id { width: 8%; }
 .records-table .col-website { width: 12%; }
 .records-table .col-brand { width: 8%; }
 .records-table .col-match { width: 8%; }
@@ -365,4 +366,38 @@
 
 .website-cell .bi {
     font-size: 0.75em;
+}
+
+/* Add modal styles */
+.modal-header.bg-success {
+    background-color: #198754 !important;
+}
+
+.modal-header .btn-close-white {
+    filter: brightness(0) invert(1);
+}
+
+#congratsModal .modal-body {
+    font-size: 1.1em;
+}
+
+#congratsModal h4 {
+    color: #198754;
+    margin-bottom: 1rem;
+}
+
+.deadline-banner {
+    padding: 0.5rem 1rem;
+    font-size: 1.1em;
+    font-weight: 500;
+}
+
+.deadline-banner .text-danger {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
 }
