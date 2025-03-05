@@ -401,3 +401,15 @@
     50% { opacity: 0.5; }
     100% { opacity: 1; }
 }
+
+/* Add styles for announcement banner */
+.alert-info {
+    background-color: #cff4fc;
+    border-color: #b6effb;
+    color: #055160;
+    font-size: 1.1em;
+}
+
+.alert-info .bi {
+    font-size: 1.2em;
+}
